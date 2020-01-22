@@ -1,0 +1,54 @@
+{
+    "name": "Mycroft.AI Node Red MQTT fallback (Node-Red-MQTT-Fallback)",
+    "skillMetadata": {
+        "sections": [
+            {
+                "name": "Settings",
+                "fields": [
+                    {
+                        "name": "MQTT_Enabled",
+                        "type": "checkbox",
+                        "label": "Enable / Disable MQTT?",
+                        "value": "true"
+                    },
+                    {
+                        "name": "base_topic",
+                        "type": "text",
+                        "label": "The base MQTT Topic '<base_topic>/RemoteDevices/'",
+                        "value": "Mycroft"
+                    },
+                    {
+                        "name": "fallback_prio",
+                        "type": "number",
+                        "label": "The Priority of the fallback skill",
+                        "value": 50
+                    },
+                    {
+                        "name": "broker_address",
+                        "type": "text",
+                        "label": "IP Address of the MQTT Broker",
+                        "value": "127.0.0.1"
+                    },
+                    {
+                        "name": "broker_port",
+                        "type": "number",
+                        "label": "The MQTT Broker Port Number",
+                        "value": 1884
+                    },
+                    {
+                        "name": "broker_uname",
+                        "type": "text",
+                        "label": "Optional Broker Username",
+                        "value": ""
+                    },
+                    {
+                        "name": "broker_pass",
+                        "type": "password",
+                        "label": "Optional Broker Password",
+                        "value": ""
+                    }
+                ]
+            }
+        ]
+    }
+}
