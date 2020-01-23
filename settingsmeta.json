@@ -24,6 +24,12 @@
                         "value": 50
                     },
                     {
+                        "name": "fallback_timeout",
+                        "type": "number",
+                        "label": "Seconds when after fallback will timeout and return to Mycroft",
+                        "value": 15
+                    },
+                    {
                         "name": "broker_address",
                         "type": "text",
                         "label": "IP Address of the MQTT Broker",

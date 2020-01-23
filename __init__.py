@@ -8,6 +8,7 @@ from mycroft.audio import wait_while_speaking
 from mycroft.skills.context import adds_context, removes_context
 from mycroft.api import DeviceApi
 from websocket import create_connection
+import time
 import uuid
 import string
 import random
@@ -62,14 +63,14 @@ class NodeRedMQTTFallback(FallbackSkill):
         """
             Registers the fallback skill
         """
-        self.register_fallback(self.handle_fallback, 1)
+        self.register_fallback(self.handle_fallback, self.fallback_prio)
         self.load_data_files(dirname(__file__))
         #  Check and then monitor for credential changes
         self.settings.set_changed_callback(self.on_websettings_changed)
         self.on_websettings_changed()
         self.deviceUUID = self.get_mac_address()
-        self.add_event('recognizer_loop:utterance', self.handle_utterances)  # should be "utterances"
-        self.add_event('speak', self.handle_speak)  # should be "utterance"
+        #self.add_event('recognizer_loop:utterance', self.handle_utterances)  # should be "utterances"
+        #self.add_event('speak', self.handle_speak)  # should be "utterance"
         mqttc.on_connect = self.on_connect
         mqttc.on_message = self.on_message
         mqttc.on_disconnect = self.on_disconnect
@@ -80,15 +81,24 @@ class NodeRedMQTTFallback(FallbackSkill):
         """
             Get the utterance and send it to Nodered via  MQTT
         """
+        self.success = False
         message_json = {}  # create json object
         message_json['source'] = str(self.location_id)
         # message_json = {'source': str(self.location_id)}
         voice_payload = str(message.data.get('utterance'))
         self.targetDevice = "noderedfallbackserver"
-        message_json[msg_type] = self.get_response('request.details', data={"result": msg_type_lang})
+        message_json["command"] = voice_payload
         LOG.info("NodeRedMQTTFallback preparing to Send a message to " + self.targetDevice)
         mqtt_path = self.base_topic + "/NodeRedFallback/" + str(self.targetDevice).lower()
         self.send_MQTT(mqtt_path, message_json)
+        self.wait_for_node()
+        if self.waiting_for_node:
+            if self.success == True:
+                self.waiting_for_node = False
+            elif self.success == False:
+                self.waiting_for_node = False
+        return self.success
+
 
     def on_connect(self, mqttc, obj, flags, rc):
         LOG.info("NodeRedMQTTFallback Connection Verified")
@@ -106,6 +116,7 @@ class NodeRedMQTTFallback(FallbackSkill):
         # Sample Payload {"source":"basement", "message":"is dinner ready yet"}
         LOG.info('NodeRedMQTTFallback message received for location id: ' + str(self.location_id))
         LOG.info("This device location is: " + DeviceApi().get()["description"])
+        self.success = True
         try:
             mqtt_message = msg.payload.decode('utf-8')
             LOG.info(msg.topic + " " + str(msg.qos) + ", " + mqtt_message)
@@ -142,6 +153,7 @@ class NodeRedMQTTFallback(FallbackSkill):
         self.broker_uname = self.settings.get("broker_uname", "")
         self.broker_pass = self.settings.get("broker_pass", "")
         self.fallback_prio = self.settings.get("fallback_prio",50)
+        self.timeout = self.settings.get("fallback_timeout",15)
         # self.location_id = self.settings.get("location_id", "basement")  # This is the device_id of this device
         this_location_id = str(DeviceApi().get()["description"])
         self.location_id = this_location_id.lower()
@@ -195,40 +207,40 @@ class NodeRedMQTTFallback(FallbackSkill):
             return ret_location
 
     # utterance event used for notifications ***This is what the user requests***
-    def handle_utterances(self, message):
-        mqtt_path = self.base_topic + "/NodeRedFallback/" + self.deviceUUID + "/request"
-        # LOG.info(mqtt_path)
-        voice_payload = str(message.data.get('utterances')[0])
-        if self.notifier_bool:
-            try:
-                # LOG.info(voice_payload)
-                self.send_MQTT(mqtt_path, voice_payload)
-            except Exception as e:
-                LOG.error(e)
-                self.on_websettings_changed()
+    #def handle_utterances(self, message):
+    #    mqtt_path = self.base_topic + "/NodeRedFallback/" + self.deviceUUID + "/request"
+    #    # LOG.info(mqtt_path)
+    #    voice_payload = str(message.data.get('utterances')[0])
+    #    if self.notifier_bool:
+    #        try:
+    #            # LOG.info(voice_payload)
+    #            self.send_MQTT(mqtt_path, voice_payload)
+    #        except Exception as e:
+    #            LOG.error(e)
+    #            self.on_websettings_changed()
 
     # mycroft speaking event used for notificatons ***This is what mycroft says***
-    def handle_speak(self, message):
-        mqtt_path = self.base_topic + "/NodeRedFallback/" + self.deviceUUID + "/response"
-        # LOG.info(mqtt_path)
-        voice_payload = message.data.get('utterance')
-        if self.notifier_bool:
-            try:
-                self.send_MQTT(mqtt_path, voice_payload)
-                LOG.info("Response Location Length: " + str(len(self.response_location)))
-                if len(self.response_location) == 0:
-                    self.response_location = ''
-                else:
-                    reply_payload = {
-                        "source": str(self.location_id),
-                        "message": voice_payload
-                    }
-                    reply_path = self.base_topic + "/NodeRedFallback/" + self.response_location
-                    self.response_location = ''
-                    self.send_MQTT(reply_path, reply_payload)
-            except Exception as e:
-                LOG.error(e)
-                self.on_websettings_changed()
+    #def handle_speak(self, message):
+    #    mqtt_path = self.base_topic + "/NodeRedFallback/" + self.deviceUUID + "/response"
+    #    # LOG.info(mqtt_path)
+    #    voice_payload = message.data.get('utterance')
+    #    if self.notifier_bool:
+    #        try:
+    #            self.send_MQTT(mqtt_path, voice_payload)
+    #            LOG.info("Response Location Length: " + str(len(self.response_location)))
+    #            if len(self.response_location) == 0:
+    #                self.response_location = ''
+    #            else:
+    #                reply_payload = {
+    #                    "source": str(self.location_id),
+    #                    "message": voice_payload
+    #                }
+    #                reply_path = self.base_topic + "/NodeRedFallback/" + self.response_location
+    #                self.response_location = ''
+    #                self.send_MQTT(reply_path, reply_payload)
+    #        except Exception as e:
+    #            LOG.error(e)
+    #            self.on_websettings_changed()
 
     def send_MQTT(self, my_topic, my_message):  # Sends MQTT Message
         # LOG.info("This device location is: " + DeviceApi().get()["description"])
@@ -253,6 +265,12 @@ class NodeRedMQTTFallback(FallbackSkill):
         ws = create_connection(uri)
         ws.send(payload)
         ws.close()
+
+    def wait_for_node(self):
+        start = time.time()
+        self.waiting_for_node = True
+        while self.waiting_for_node and time.time() - start < float(self.timeout):
+            time.sleep(0.3)
 
     def shutdown(self):
         """
