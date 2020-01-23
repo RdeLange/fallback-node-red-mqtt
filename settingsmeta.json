@@ -1,5 +1,5 @@
 {
-    "name": "Mycroft.AI Node Red MQTT fallback (Node-Red-MQTT-Fallback)",
+    "name": "Node-Red-MQTT-Fallback",
     "skillMetadata": {
         "sections": [
             {

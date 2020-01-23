@@ -57,6 +57,8 @@ class NodeRedMQTTFallback(FallbackSkill):
         self.broker_pass = ''
         self.location_id = ''
         self.response_location = ''
+        self.fallback_prio = self.settings.get("fallback_prio",50)
+
 
 
     def initialize(self):
